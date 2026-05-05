@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">フレタン icon</title>
+  <desc id="desc">A compact phrase learning app icon.</desc>
+  <rect width="512" height="512" rx="112" fill="#18212f"/>
+  <path d="M112 142c0-25 20-45 45-45h198c25 0 45 20 45 45v228c0 25-20 45-45 45H157c-25 0-45-20-45-45V142Z" fill="#f8f5ee"/>
+  <path d="M154 166c0-15 12-27 27-27h150c15 0 27 12 27 27v44c0 15-12 27-27 27H181c-15 0-27-12-27-27v-44Z" fill="#137a63"/>
+  <path d="M177 287h158" stroke="#18212f" stroke-width="24" stroke-linecap="round"/>
+  <path d="M177 348h108" stroke="#d95745" stroke-width="24" stroke-linecap="round"/>
+  <text x="256" y="203" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="800" fill="#ffffff">Aa</text>
+</svg>

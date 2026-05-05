@@ -1,0 +1,47 @@
+{
+  "name": "フレタン - フレーズ英語ドリル",
+  "short_name": "フレタン",
+  "description": "英語フレーズを学習カード、4択、穴埋め、瞬間英作文で覚える無料PWAアプリ。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8f5ee",
+  "theme_color": "#18212f",
+  "categories": ["education", "productivity"],
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "テストを始める",
+      "short_name": "テスト",
+      "url": "./index.html#quiz",
+      "description": "フレーズテストを開きます"
+    },
+    {
+      "name": "苦手復習",
+      "short_name": "復習",
+      "url": "./index.html#review",
+      "description": "苦手フレーズを復習します"
+    }
+  ]
+}

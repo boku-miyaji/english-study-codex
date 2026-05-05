@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#18212f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="フレタン" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="description"
+      content="英語フレーズを学習カード、4択、穴埋め、瞬間英作文で覚える無料PWAアプリ。"
+    />
+    <title>フレタン</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="top-bar">
+        <div>
+          <p class="eyebrow">Phrase Drill</p>
+          <h1>フレタン</h1>
+        </div>
+        <button class="icon-button" id="resetBtn" aria-label="進捗をリセット" title="進捗をリセット">↺</button>
+      </section>
+
+      <section class="daily-panel">
+        <div>
+          <p class="muted">今日の復習</p>
+          <strong id="dueCount">0</strong>
+        </div>
+        <div>
+          <p class="muted">正答率</p>
+          <strong id="accuracy">0%</strong>
+        </div>
+        <div>
+          <p class="muted">連続</p>
+          <strong id="streak">1日</strong>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="学習モード">
+        <button class="tab active" data-view="learn">学習</button>
+        <button class="tab" data-view="quiz">テスト</button>
+        <button class="tab" data-view="review">復習</button>
+        <button class="tab" data-view="stats">記録</button>
+      </nav>
+
+      <section class="view active" id="learnView">
+        <div class="phrase-card">
+          <div class="card-head">
+            <span id="phraseCategory">Business</span>
+            <span id="phraseLevel">TOEIC 600</span>
+          </div>
+          <p class="jp" id="phraseJa"></p>
+          <button class="audio-button" id="speakBtn">▶ 英語を聞く</button>
+          <p class="en" id="phraseEn"></p>
+          <p class="note" id="phraseNote"></p>
+        </div>
+
+        <div class="actions">
+          <button class="secondary" id="hardBtn">苦手</button>
+          <button class="primary" id="knownBtn">覚えた</button>
+        </div>
+      </section>
+
+      <section class="view" id="quizView">
+        <div class="mode-switch">
+          <button class="pill active" data-quiz="choice">4択</button>
+          <button class="pill" data-quiz="blank">穴埋め</button>
+          <button class="pill" data-quiz="type">入力</button>
+        </div>
+
+        <div class="quiz-card">
+          <p class="quiz-label" id="quizLabel">日本語から英語</p>
+          <h2 id="quizPrompt"></h2>
+          <div id="quizBody"></div>
+          <p class="feedback" id="feedback"></p>
+        </div>
+
+        <button class="primary full" id="nextQuizBtn">次の問題</button>
+      </section>
+
+      <section class="view" id="reviewView">
+        <div class="review-list" id="reviewList"></div>
+      </section>
+
+      <section class="view" id="statsView">
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span>学習済み</span>
+            <strong id="learnedTotal">0</strong>
+          </div>
+          <div class="stat-box">
+            <span>苦手</span>
+            <strong id="hardTotal">0</strong>
+          </div>
+          <div class="stat-box">
+            <span>正解</span>
+            <strong id="correctTotal">0</strong>
+          </div>
+          <div class="stat-box">
+            <span>ミス</span>
+            <strong id="wrongTotal">0</strong>
+          </div>
+        </div>
+        <div class="category-bars" id="categoryBars"></div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js");
+        });
+      }
+    </script>
+  </body>
+</html>
