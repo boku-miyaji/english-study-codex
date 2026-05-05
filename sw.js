@@ -1,4 +1,4 @@
-const cacheName = "furetan-cache-v1";
+const cacheName = "furetan-cache-v2";
 const assets = [
   "./",
   "./index.html",

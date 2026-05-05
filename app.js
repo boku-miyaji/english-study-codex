@@ -122,6 +122,11 @@ const phrases = [
 ];
 
 const storeKey = "furetan-progress-v1";
+const decks = [
+  { id: "basic", title: "Basic", label: "TOEIC 500-550", min: 500, max: 550 },
+  { id: "core", title: "Core", label: "TOEIC 600-650", min: 600, max: 650 },
+  { id: "advanced", title: "Advanced", label: "TOEIC 700-750", min: 700, max: 750 },
+];
 const initialProgress = {
   learned: [],
   hard: [],
@@ -129,6 +134,7 @@ const initialProgress = {
   wrong: 0,
   attempts: {},
   dueAt: {},
+  selectedDeck: "basic",
   lastStudied: new Date().toISOString().slice(0, 10),
 };
 
@@ -163,9 +169,30 @@ function addDays(days) {
   return date.toISOString().slice(0, 10);
 }
 
-function duePhraseIds() {
+function levelScore(phrase) {
+  return Number(phrase.level.replace(/\D/g, ""));
+}
+
+function activeDeck() {
+  return decks.find((deck) => deck.id === progress.selectedDeck) || decks[0];
+}
+
+function deckForPhrase(phrase) {
+  const score = levelScore(phrase);
+  return decks.find((deck) => score >= deck.min && score <= deck.max) || decks[0];
+}
+
+function phrasePool() {
+  const deck = activeDeck();
+  return phrases.filter((phrase) => {
+    const score = levelScore(phrase);
+    return score >= deck.min && score <= deck.max;
+  });
+}
+
+function duePhraseIds(pool = phrasePool()) {
   const now = today();
-  return phrases
+  return pool
     .filter((phrase) => {
       const dueAt = progress.dueAt[phrase.id];
       return progress.hard.includes(phrase.id) || !dueAt || dueAt <= now;
@@ -182,12 +209,53 @@ function phraseState(id) {
 }
 
 function nextDuePhrase() {
-  const dueIds = duePhraseIds();
-  const hard = phrases.find((phrase) => progress.hard.includes(phrase.id) && dueIds.includes(phrase.id));
+  const pool = phrasePool();
+  const dueIds = duePhraseIds(pool);
+  const hard = pool.find((phrase) => progress.hard.includes(phrase.id) && dueIds.includes(phrase.id));
   if (hard) return hard;
-  const due = phrases.find((phrase) => dueIds.includes(phrase.id));
+  const due = pool.find((phrase) => dueIds.includes(phrase.id));
   if (due) return due;
-  return phrases[currentIndex % phrases.length];
+  return pool[currentIndex % pool.length] || phrases[0];
+}
+
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, (char) => {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char];
+  });
+}
+
+function highlightImportant(phrase) {
+  const escaped = escapeHtml(phrase.en);
+  const answer = escapeHtml(phrase.answer);
+  const pattern = new RegExp(`\\b(${answer})\\b`, "i");
+  return escaped.replace(pattern, `<span class="important">$1</span>`);
+}
+
+function renderDecks() {
+  $("#activeDeckLabel").textContent = activeDeck().label;
+  $("#deckGrid").innerHTML = decks
+    .map((deck) => {
+      const pool = phrases.filter((phrase) => deckForPhrase(phrase).id === deck.id);
+      const learned = pool.filter((phrase) => progress.learned.includes(phrase.id)).length;
+      return `
+        <button class="deck-card ${deck.id === progress.selectedDeck ? "active" : ""}" type="button" data-deck="${deck.id}">
+          <strong>${deck.title}</strong>
+          <span>${deck.label}<br>${learned}/${pool.length} 学習済み</span>
+        </button>
+      `;
+    })
+    .join("");
+
+  $$(".deck-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      progress.selectedDeck = card.dataset.deck;
+      saveProgress();
+      renderDecks();
+      renderLearn();
+      renderQuiz();
+      renderReview();
+    });
+  });
 }
 
 function renderLearn() {
@@ -196,7 +264,7 @@ function renderLearn() {
   $("#phraseCategory").textContent = phrase.category;
   $("#phraseLevel").textContent = phrase.level;
   $("#phraseJa").textContent = phrase.ja;
-  $("#phraseEn").textContent = phrase.en;
+  $("#phraseEn").innerHTML = highlightImportant(phrase);
   $("#phraseNote").textContent = phrase.note;
 }
 
@@ -211,8 +279,9 @@ function markPhrase(kind) {
     progress.hard = unique([...progress.hard, phrase.id]);
     progress.dueAt[phrase.id] = today();
   }
-  currentIndex = (currentIndex + 1) % phrases.length;
+  currentIndex = (currentIndex + 1) % phrasePool().length;
   saveProgress();
+  renderDecks();
   renderLearn();
   renderReview();
 }
@@ -244,9 +313,11 @@ function switchView(view) {
 }
 
 function renderQuiz() {
-  const pool = progress.hard.length
-    ? phrases.filter((phrase) => progress.hard.includes(phrase.id))
-    : phrases.filter((phrase) => duePhraseIds().includes(phrase.id));
+  const selectedPool = phrasePool();
+  const hardInDeck = selectedPool.filter((phrase) => progress.hard.includes(phrase.id));
+  const pool = hardInDeck.length
+    ? hardInDeck
+    : selectedPool.filter((phrase) => duePhraseIds(selectedPool).includes(phrase.id));
   const quizPool = pool.length ? pool : phrases;
   currentQuiz = quizPool[Math.floor(Math.random() * quizPool.length)];
   $("#feedback").textContent = "";
@@ -258,11 +329,15 @@ function renderQuiz() {
 }
 
 function renderChoiceQuiz(phrase) {
-  $("#quizLabel").textContent = "日本語から英語";
+  $("#quizLabel").textContent = `${activeDeck().label} / 日本語から英語`;
   $("#quizPrompt").textContent = phrase.ja;
+  const selectedPool = phrasePool();
+  const distractorSource = selectedPool.length >= 4 ? selectedPool : phrases;
   const choices = shuffle([
     phrase.en,
-    ...shuffle(phrases.filter((item) => item.id !== phrase.id)).slice(0, 3).map((item) => item.en),
+    ...shuffle(distractorSource.filter((item) => item.id !== phrase.id))
+      .slice(0, 3)
+      .map((item) => item.en),
   ]);
   $("#quizBody").innerHTML = `<div class="choice-grid">${choices
     .map((choice) => `<button class="choice" type="button">${choice}</button>`)
@@ -283,7 +358,7 @@ function renderChoiceQuiz(phrase) {
 }
 
 function renderBlankQuiz(phrase) {
-  $("#quizLabel").textContent = "穴埋め";
+  $("#quizLabel").textContent = `${activeDeck().label} / 穴埋め`;
   $("#quizPrompt").textContent = phrase.ja;
   $("#quizBody").innerHTML = `
     <p class="blank-line">${phrase.blank}</p>
@@ -298,7 +373,7 @@ function renderBlankQuiz(phrase) {
 }
 
 function renderTypeQuiz(phrase) {
-  $("#quizLabel").textContent = "瞬間英作文";
+  $("#quizLabel").textContent = `${activeDeck().label} / 瞬間英作文`;
   $("#quizPrompt").textContent = phrase.ja;
   $("#quizBody").innerHTML = `
     <input class="type-input" id="typeInput" autocomplete="off" autocapitalize="none" placeholder="English phrase" />
@@ -335,6 +410,7 @@ function recordAnswer(id, ok) {
   }
   progress.attempts[id] = attempts;
   saveProgress();
+  renderDecks();
   renderReview();
 }
 
@@ -344,9 +420,9 @@ function showFeedback(ok, answer) {
 }
 
 function renderReview() {
-  const hardPhrases = phrases.filter((phrase) => progress.hard.includes(phrase.id));
+  const hardPhrases = phrasePool().filter((phrase) => progress.hard.includes(phrase.id));
   if (!hardPhrases.length) {
-    $("#reviewList").innerHTML = `<div class="empty">苦手フレーズはありません</div>`;
+    $("#reviewList").innerHTML = `<div class="empty">${activeDeck().label} の苦手フレーズはありません</div>`;
     return;
   }
   $("#reviewList").innerHTML = hardPhrases
@@ -364,11 +440,12 @@ function renderReview() {
 function renderStats() {
   const total = progress.correct + progress.wrong;
   const accuracy = total ? Math.round((progress.correct / total) * 100) : 0;
-  $("#dueCount").textContent = String(duePhraseIds().length);
+  const selectedPool = phrasePool();
+  $("#dueCount").textContent = String(duePhraseIds(selectedPool).length);
   $("#accuracy").textContent = `${accuracy}%`;
   $("#streak").textContent = "1日";
-  $("#learnedTotal").textContent = String(progress.learned.length);
-  $("#hardTotal").textContent = String(progress.hard.length);
+  $("#learnedTotal").textContent = String(selectedPool.filter((phrase) => progress.learned.includes(phrase.id)).length);
+  $("#hardTotal").textContent = String(selectedPool.filter((phrase) => progress.hard.includes(phrase.id)).length);
   $("#correctTotal").textContent = String(progress.correct);
   $("#wrongTotal").textContent = String(progress.wrong);
 
@@ -394,8 +471,9 @@ function shuffle(items) {
 
 function resetProgress() {
   if (!confirm("進捗をリセットしますか？")) return;
-  progress = { ...initialProgress, attempts: {}, lastStudied: new Date().toISOString().slice(0, 10) };
+  progress = { ...initialProgress, attempts: {}, dueAt: {}, lastStudied: new Date().toISOString().slice(0, 10) };
   saveProgress();
+  renderDecks();
   renderLearn();
   renderQuiz();
   renderReview();
@@ -420,6 +498,7 @@ window.addEventListener("hashchange", () => {
   if (["learn", "quiz", "review", "stats"].includes(view)) switchView(view);
 });
 
+renderDecks();
 renderLearn();
 renderQuiz();
 renderReview();
